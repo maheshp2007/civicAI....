@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CivicAI: from complaints to action</title>
+<meta name="description" content="Report a public problem. AI sets the priority, flags duplicates and tells the right team what to do first.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b4f3c'/%3E%3Cpath d='M22 78V36l28-16 28 16v42M40 78V58h20v20' fill='none' stroke='%23f6b90e' stroke-width='6' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--g:#0b4f3c;--g2:#0f6b50;--gold:#f6b90e;--bg:#f3f5f2;--ink:#12201b;--mut:#5b6b64;--line:#d9e0db;--red:#c8372d;--f1:"Bricolage Grotesque",system-ui,sans-serif;--f2:"Figtree",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font:16px/1.55 var(--f2);background:var(--bg);color:var(--ink)}
+h1,h2,h3{font-family:var(--f1);line-height:1.1;letter-spacing:-.02em}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1160px;margin:auto;padding:0 20px}
+section{padding:72px 0 0}
+.btn{display:inline-block;padding:.8rem 1.4rem;border-radius:999px;font:600 1rem var(--f2);border:0;cursor:pointer;text-decoration:none;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.gold{background:var(--gold);color:#221a00}.btn.dark{background:var(--g);color:#fff}
+.btn.ghost{border:2px solid rgba(255,255,255,.6);color:#fff;padding:calc(.8rem - 2px) 1.4rem}
+.btn:disabled{opacity:.6;cursor:wait}
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:rgba(243,245,242,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:28px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font:800 1.3rem var(--f1);text-decoration:none}
+.mark{width:34px;height:34px;border-radius:10px;background:var(--g);color:var(--gold);display:grid;place-items:center}
+.nav nav{display:flex;gap:22px;margin-left:auto;font-weight:500}.nav nav a{text-decoration:none;color:var(--mut)}.nav nav a:hover{color:var(--ink)}
+svg.i{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* hero sign */
+.sign{position:relative;background:var(--g);color:#fff;border-radius:30px;padding:64px 56px;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;margin-top:20px}
+.sign:before{content:"";position:absolute;inset:12px;border:2px solid rgba(255,255,255,.35);border-radius:20px;pointer-events:none}
+.sign h1{font-size:clamp(2.4rem,5vw,4rem);font-weight:800}
+.sign p{margin:20px 0 28px;font-size:1.15rem;color:#d3e6dc;max-width:46ch}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.ticket{position:relative;background:#fff;color:var(--ink);border-radius:18px;padding:20px;box-shadow:0 24px 50px rgba(0,0,0,.28)}
+.t-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem;color:var(--mut);margin-bottom:10px}
+.dot{width:9px;height:9px;border-radius:50%;background:#2fb67c;box-shadow:0 0 0 4px #2fb67c33}
+.ticket textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font:1rem/1.45 var(--f2);resize:none;color:var(--ink);background:#fafbfa}
+.t-res{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:14px}
+.t-res .wide{grid-column:1/-1}
+.t-res dt{font-size:.8rem;color:var(--mut);font-weight:600;margin-bottom:2px}.t-res dd{font-size:.95rem;font-weight:500;min-height:1.4em}
+/* chips */
+.chip{display:inline-block;padding:.15rem .7rem;border-radius:999px;font-weight:700;font-size:.82rem;background:#e9eeeb;color:#34453d}
+.p-High{background:#fde4e1;color:#9b1c13}.p-Medium{background:#fdecc8;color:#7a4700}.p-Low{background:#dcefe5;color:#1d5a40}
+/* headings */
+.head{max-width:620px;margin-bottom:32px}.head h2{font-size:clamp(1.9rem,3.6vw,2.7rem)}.head p{color:var(--mut);margin-top:10px;font-size:1.08rem}
+/* bento features */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.f{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:12px}
+.f h3{font-size:1.35rem}.f p{color:var(--mut)}
+.s7{grid-column:span 7}.s5{grid-column:span 5}.s4{grid-column:span 4}.s12{grid-column:span 12;flex-direction:row;align-items:center;gap:18px}
+.ic{width:42px;height:42px;border-radius:12px;background:#e3eee8;color:var(--g);display:grid;place-items:center;flex:none}
+.f.dk{background:var(--g);border-color:var(--g);color:#fff}.f.dk p{color:#c6ddd2}.f.dk .ic{background:#ffffff1f;color:var(--gold)}
+.vis{margin-top:auto;padding-top:6px;display:grid;gap:8px;font-size:.92rem}
+.row{display:flex;align-items:center;gap:10px;background:#f3f5f2;border-radius:10px;padding:8px 12px}
+.bar2{height:10px;border-radius:9px;background:#e3eae6;overflow:hidden}.bar2 i{display:block;height:100%;background:var(--g2);border-radius:9px}
+.dk .bar2{background:#ffffff26}.dk .bar2 i{background:var(--gold)}
+.quote{border-left:4px solid var(--gold);background:#fff8e1;padding:10px 14px;border-radius:0 10px 10px 0;color:#4a3b00}
+.flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+/* how */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+.step{border-top:4px solid var(--g);padding-top:14px}.step:before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--gold);font:800 1rem var(--f1);margin-bottom:10px}
+.step h3{font-size:1.15rem;margin-bottom:4px}.step p{color:var(--mut);font-size:.96rem}
+/* report */
+.report{display:grid;grid-template-columns:1.15fr 1fr;gap:20px;align-items:start}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px}
+label{display:block;font-weight:600;margin:16px 0 6px;font-size:.95rem}label:first-of-type{margin-top:0}
+input,textarea,select{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font:1rem var(--f2);background:#fff;color:var(--ink)}
+input:focus,textarea:focus,select:focus{border-color:var(--g2);outline:0;box-shadow:0 0 0 3px #0f6b5028}
+#description{height:110px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#preview{display:none;max-width:100%;max-height:150px;border-radius:12px;margin-top:10px}
+form .btn{width:100%;margin-top:22px;padding:1rem}
+.side h3{font-size:1.3rem;margin-bottom:12px}.side ul{padding-left:20px;display:grid;gap:10px;color:var(--mut)}.side li b{color:var(--ink)}
+.res{display:grid;gap:12px}.res .id{font:800 2rem var(--f1)}.res small{display:block;color:var(--mut);font-weight:600;font-size:.8rem}
+/* dashboard */
+.dh{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.badge{font-weight:600;font-size:.85rem;padding:.35rem .8rem;border-radius:999px;background:#fdecc8;color:#7a4700}.badge.on{background:#dcefe5;color:#1d5a40}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}
+.stat small{font-weight:600;color:var(--mut)}.stat b{display:block;font:800 2.3rem var(--f1);margin:2px 0 10px}
+.hot{display:grid;gap:10px;margin-top:14px}.hot .h{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:12px;font-weight:500}.hot .h b{text-align:right}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 12px}
+.tools input{max-width:260px}.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:.45rem 1rem;font:600 .9rem var(--f2);cursor:pointer}.seg button[aria-pressed=true]{background:var(--g);border-color:var(--g);color:#fff}
+.tw{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:18px}
+table{width:100%;border-collapse:collapse;min-width:860px}
+th,td{padding:14px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);font-size:.94rem}
+th{background:#eaf0ec;font-size:.82rem;color:var(--mut)}tr:last-child td{border:0}
+td small{display:block;color:var(--mut);margin-top:2px}
+td select{padding:8px 10px;font-size:.9rem;border-radius:10px}
+.empty{padding:36px;text-align:center;color:var(--mut)}
+footer{margin-top:80px;background:var(--g);color:#c6ddd2;padding:34px 0}footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:.8rem 1.3rem;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:90vw}
+#toast.show{opacity:1;transform:translate(-50%,0)}#toast.err{background:var(--red)}
+@media(max-width:900px){.sign{grid-template-columns:1fr;padding:44px 28px}.s7,.s5,.s4{grid-column:span 12}.report{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.nav nav{display:none}.bar{justify-content:space-between}.two{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.s12{flex-direction:column;align-items:flex-start}.hot .h{grid-template-columns:90px 1fr 30px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+<symbol id="copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+<symbol id="task" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+<symbol id="city" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></symbol>
+</defs></svg>
+
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="#top"><span class="mark"><svg class="i"><use href="#city"/></svg></span>CivicAI</a>
+  <nav><a href="#features">Features</a><a href="#how">How it works</a><a href="#report">Report</a><a href="#dashboard">Dashboard</a></nav>
+  <a class="btn dark" href="#report">Report a problem</a>
+</div></header>
+
+<main id="top">
+<div class="wrap">
+  <div class="sign">
+    <div>
+      <h1>Report it. AI routes it. The city acts.</h1>
+      <p>CivicAI reads every complaint, sets its priority, catches duplicates and tells the right team what to do first.</p>
+      <div class="cta"><a class="btn gold" href="#report">Report a problem</a><a class="btn ghost" href="#dashboard">See the dashboard</a></div>
+    </div>
+    <div class="ticket">
+      <div class="t-head"><span class="dot"></span>Live AI check: type your own complaint</div>
+      <textarea id="demo" rows="4" aria-label="Type a sample complaint to see the AI analysis"></textarea>
+      <dl class="t-res" aria-live="polite">
+        <div><dt>Priority</dt><dd id="d-pri"></dd></div>
+        <div><dt>Category</dt><dd id="d-cat"></dd></div>
+        <div class="wide"><dt>Suggested action</dt><dd id="d-act"></dd></div>
+        <div class="wide"><dt>Duplicate check</dt><dd id="d-dup"></dd></div>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<section id="features"><div class="wrap">
+  <div class="head"><h2>Built to turn complaints into work orders</h2><p>Everything a complaint needs between “someone noticed” and “someone fixed it”.</p></div>
+  <div class="bento">
+    <article class="f s7">
+      <span class="ic"><svg class="i"><use href="#zap"/></svg></span>
+      <h3>Urgent problems jump the queue</h3>
+      <p>Words like exposed wire, flood or accident mark a complaint High priority the moment it arrives.</p>
+      <div class="vis">
+        <div class="row"><span class="chip p-High">High</span>Electric wire fallen near houses</div>
+        <div class="row"><span class="chip p-Medium">Medium</span>Garbage piles near residential area</div>
+        <div class="row"><span class="chip p-Low">Low</span>Bench near the lake needs repainting</div>
+      </div>
+    </article>
+    <article class="f s5">
+      <span class="ic"><svg class="i"><use href="#copy"/></svg></span>
+      <h3>Duplicates caught automatically</h3>
+      <p>New reports are compared with old ones. Above 40% similarity, the original is linked.</p>
+      <div class="vis"><div class="row" style="justify-content:space-between"><span>Possible duplicate of #4</span><b>72%</b></div><div class="bar2"><i style="width:72%"></i></div></div>
+    </article>
+    <article class="f s4">
+      <span class="ic"><svg class="i"><use href="#task"/></svg></span>
+      <h3>A next step for every complaint</h3>
+      <p>Each one gets a plain-language action for the right department.</p>
+      <div class="vis"><div class="quote">Place safety warnings and dispatch an urgent road repair team.</div></div>
+    </article>
+    <article class="f s4 dk">
+      <span class="ic"><svg class="i"><use href="#pin"/></svg></span>
+      <h3>Hotspots show where to send crews</h3>
+      <p>Areas with the most reports rise to the top.</p>
+      <div class="vis" id="miniHot"></div>
+    </article>
+    <article class="f s4">
+      <span class="ic"><svg class="i"><use href="#act"/></svg></span>
+      <h3>Status everyone can follow</h3>
+      <p>Admins move each complaint along as work happens.</p>
+      <div class="vis"><div class="flow"><span class="chip">Pending</span><span>→</span><span class="chip p-Medium">In Progress</span><span>→</span><span class="chip p-Low">Resolved</span></div></div>
+    </article>
+    <article class="f s12">
+      <span class="ic"><svg class="i"><use href="#phone"/></svg></span>
+      <div><h3>Works on any phone, no sign-up</h3><p>Open the page, fill in five fields, submit. You get the AI result straight away.</p></div>
+    </article>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="head"><h2>From report to resolved in four steps</h2></div>
+  <div class="steps">
+    <div class="step"><h3>You report</h3><p>Describe the problem and where it is.</p></div>
+    <div class="step"><h3>AI reads it</h3><p>Priority, summary and duplicate check in seconds.</p></div>
+    <div class="step"><h3>A team is assigned</h3><p>The admin sees a suggested action for the department.</p></div>
+    <div class="step"><h3>It gets fixed</h3><p>Status moves to Resolved and the hotspot count drops.</p></div>
+  </div>
+</div></section>
+
+<section id="report"><div class="wrap">
+  <div class="head"><h2>Report a public problem</h2><p>Help us make your community better. Be specific about what and where.</p></div>
+  <div class="report">
+    <form class="card" id="complaintForm">
+      <label for="title">Complaint title</label>
+      <input id="title" placeholder="Example: Damaged road near bus stop" required>
+      <div class="two">
+        <div><label for="category">Category</label>
+          <select id="category" required><option value="">Choose a category</option><option value="Road">Roads and potholes</option><option value="Water">Water supply</option><option value="Sanitation">Garbage and drainage</option><option value="Electricity">Electricity and streetlights</option><option value="Other">Other</option></select></div>
+        <div><label for="location">Location</label><input id="location" list="places" placeholder="Area or town" required>
+          <datalist id="places"><option>Mangaluru</option><option>Udupi</option><option>Moodbidri</option></datalist></div>
+      </div>
+      <label for="description">Description</label>
+      <textarea id="description" placeholder="What is the problem, and who does it affect?" required></textarea>
+      <label for="image">Photo (optional)</label>
+      <input type="file" id="image" accept="image/*"><img id="preview" alt="Selected photo preview">
+      <button class="btn dark" type="submit">Submit complaint</button>
+    </form>
+    <aside class="card side" id="side" aria-live="polite">
+      <h3>What happens next</h3>
+      <ul><li><b>Priority is set.</b> Safety words push it to High.</li><li><b>Duplicates are checked.</b> You will see if someone already reported it.</li><li><b>A team gets a suggested action.</b> Then the admin tracks it to Resolved.</li></ul>
+    </aside>
+  </div>
+</div></section>
+
+<section id="dashboard"><div class="wrap">
+  <div class="dh"><div class="head" style="margin:0"><h2>Admin dashboard</h2><p>Every complaint, ranked and ready to act on.</p></div><span class="badge" id="mode">Checking data…</span></div>
+  <div class="stats" style="margin-top:28px">
+    <div class="stat"><small>Total complaints</small><b id="s-total">0</b><div class="bar2"><i style="width:100%"></i></div></div>
+    <div class="stat"><small>Pending</small><b id="s-pending">0</b><div class="bar2"><i id="b-pending" style="background:#d99a00"></i></div></div>
+    <div class="stat"><small>High priority</small><b id="s-high">0</b><div class="bar2"><i id="b-high" style="background:var(--red)"></i></div></div>
+    <div class="stat"><small>Resolved</small><b id="s-resolved">0</b><div class="bar2"><i id="b-resolved"></i></div></div>
+  </div>
+  <div class="card"><h3 style="font-size:1.35rem">Complaint hotspots</h3><p style="color:var(--mut)">Locations with the most reported issues.</p><div class="hot" id="hot"></div></div>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Search complaints" aria-label="Search complaints">
+    <div class="seg" id="seg"><button aria-pressed="true">All</button><button aria-pressed="false">Pending</button><button aria-pressed="false">In Progress</button><button aria-pressed="false">Resolved</button></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>ID</th><th>Complaint</th><th>Location</th><th>Priority</th><th>AI recommendation</th><th>Status</th></tr></thead>
+    <tbody id="rows"></tbody></table></div>
+</div></section>
+</main>
+
+<footer><div class="wrap"><span>© 2026 CivicAI. AI for civic impact.</span><a href="https://github.com/maheshp2007/CivicAI">Source on GitHub</a></div></footer>
+<div id="toast" role="status"></div>
+
+<script>
+// Leave empty when the Flask app serves this page. On GitHub Pages, set it to your
+// deployed backend (e.g. "https://civicai.onrender.com"). With no reachable backend,
+// the page runs on sample data stored in this browser.
+const API_BASE = "";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const URGENT = ["danger","accident","flood","emergency","injury","electric","overflow","blocked"];
+const MEDIUM = ["damage","broken","garbage","water","pothole"];
+const tok = t => t.toLowerCase().match(/\b\w\w+\b/g) || [];
+
+// Browser port of ai/analyzer.py (keywords + TF-IDF cosine duplicate check)
+function analyze(desc, existing) {
+  const t = desc.toLowerCase();
+  let priority = "Low", reason = "No urgent keywords detected.";
+  if (URGENT.some(w => t.includes(w))) { priority = "High"; reason = "Contains potentially urgent safety-related keywords."; }
+  else if (MEDIUM.some(w => t.includes(w))) { priority = "Medium"; reason = "Contains keywords indicating a public infrastructure issue."; }
+  let duplicate = null;
+  if (existing.length && tok(desc).length) {
+    const docs = [...existing.map(e => tok(e.description)), tok(desc)], n = docs.length, df = {};
+    docs.forEach(d => new Set(d).forEach(w => df[w] = (df[w] || 0) + 1));
+    const vec = d => { const v = {}; let s = 0; d.forEach(w => v[w] = (v[w] || 0) + 1);
+      for (const w in v) { v[w] *= Math.log((1 + n) / (1 + df[w])) + 1; s += v[w] ** 2; }
+      s = Math.sqrt(s) || 1; for (const w in v) v[w] /= s; return v; };
+    const q = vec(docs[n - 1]); let best = 0, bi = -1;
+    existing.forEach((e, i) => { const v = vec(docs[i]); let d = 0; for (const w in q) if (v[w]) d += q[w] * v[w]; if (d > best) { best = d; bi = i; } });
+    if (best >= 0.4) duplicate = { complaint_id: existing[bi].id, similarity: Math.round(best * 1000) / 10 };
+  }
+  return { summary: desc.slice(0, 120), priority, reason, duplicate };
+}
+function recommend(cat, pri, desc) {
+  cat = cat.toLowerCase(); desc = desc.toLowerCase();
+  if (pri === "High") {
+    if (cat.includes("electric") || desc.includes("wire")) return "Immediately alert the electricity department and secure the affected area.";
+    if (cat.includes("water") || desc.includes("flood")) return "Send an emergency response team to inspect the affected area.";
+    if (cat.includes("road")) return "Place safety warnings and dispatch an urgent road repair team.";
+    return "Escalate this complaint immediately to the responsible department.";
+  }
+  if (cat === "sanitation") return "Assign a sanitation team to inspect and clean the affected location.";
+  if (cat === "water") return "Assign a water department team to inspect the pipeline and restore supply.";
+  if (cat === "road") return "Schedule a road inspection and plan necessary repairs.";
+  if (cat === "electricity") return "Forward the complaint to the electricity maintenance department.";
+  return "Assign this complaint to the relevant municipal department for inspection.";
+}
+function guessCategory(t) {
+  t = t.toLowerCase();
+  if (/electric|wire|street ?light|power|pole/.test(t)) return "Electricity";
+  if (/garbage|waste|drain|sewage|trash/.test(t)) return "Sanitation";
+  if (/road|pothole|asphalt|bridge/.test(t)) return "Road";
+  if (/water|pipe|tap|leak/.test(t)) return "Water";
+  return "Other";
+}
+
+// Sample data (same 20 rows as seed_data.py)
+const SEED = [["Water Leakage","Water pipeline leaking continuously","Water","Mangaluru"],["Road Damage","Large potholes on the main road","Road","Mangaluru"],["Garbage Overflow","Garbage overflowing near public park","Sanitation","Mangaluru"],["Electric Wire","Dangerous electric wire hanging near school","Electricity","Mangaluru"],["Street Light","Street lights are not working","Electricity","Moodbidri"],["Water Supply","No water supply for two days","Water","Moodbidri"],["Road Pothole","Large potholes creating accident risk","Road","Moodbidri"],["Drainage","Drainage water overflowing onto road","Sanitation","Moodbidri"],["Garbage Issue","Garbage not collected for several days","Sanitation","Mangaluru"],["Broken Road","Road surface is badly damaged","Road","Udupi"],["Water Leakage","Pipeline leakage wasting drinking water","Water","Udupi"],["Electric Hazard","Electric wire fallen near houses","Electricity","Udupi"],["Street Light","Street lights not working at night","Electricity","Udupi"],["Drain Block","Drain blocked and water overflowing","Sanitation","Mangaluru"],["Road Damage","Potholes causing traffic problems","Road","Mangaluru"],["Water Problem","Water pipeline damaged","Water","Moodbidri"],["Garbage","Garbage piles near residential area","Sanitation","Udupi"],["Electricity","Exposed electric wire creating danger","Electricity","Mangaluru"],["Road Issue","Damaged road near bus stop","Road","Moodbidri"],["Drainage Problem","Blocked drainage causing overflow","Sanitation","Udupi"]];
+
+let list = [], live = false, filter = "All";
+
+function demoLoad() {
+  try { const s = localStorage.getItem("civicai-demo"); if (s) return JSON.parse(s); } catch {}
+  const done = [3, 6], prog = [2, 9, 14];
+  return SEED.map((r, i) => { const id = i + 1, a = analyze(r[1], []);
+    return { id, title: r[0], description: r[1], category: r[2], location: r[3],
+      status: done.includes(id) ? "Resolved" : prog.includes(id) ? "In Progress" : "Pending",
+      priority: a.priority, recommendation: recommend(r[2], a.priority, r[1]) }; });
+}
+function demoSave() { try { localStorage.setItem("civicai-demo", JSON.stringify(list)); } catch {} }
+
+async function req(path, opts) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 6000);
+  try {
+    const r = await fetch(API_BASE + path, { ...opts, signal: c.signal });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Request failed");
+    return j;
+  } finally { clearTimeout(t); }
+}
+
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "show" + (err ? " err" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3200);
+}
+
+// ---------- rendering ----------
+function hotspots() {
+  const m = {}; list.forEach(c => m[c.location] = (m[c.location] || 0) + 1);
+  return Object.entries(m).sort((a, b) => b[1] - a[1]);
+}
+function render() {
+  const n = list.length, cnt = f => list.filter(f).length, pct = v => n ? Math.round(v / n * 100) + "%" : "0%";
+  const pend = cnt(c => c.status === "Pending"), high = cnt(c => c.priority === "High"), res = cnt(c => c.status === "Resolved");
+  $("#s-total").textContent = n; $("#s-pending").textContent = pend; $("#s-high").textContent = high; $("#s-resolved").textContent = res;
+  $("#b-pending").style.width = pct(pend); $("#b-high").style.width = pct(high); $("#b-resolved").style.width = pct(res);
+  const m = $("#mode"); m.textContent = live ? "Live data" : "Sample data (no backend connected)"; m.className = "badge" + (live ? " on" : "");
+  const hs = hotspots(), max = hs.length ? hs[0][1] : 1;
+  $("#hot").innerHTML = hs.length ? hs.map(([l, v]) => `<div class="h"><span>${esc(l)}</span><div class="bar2"><i style="width:${v / max * 100}%"></i></div><b>${v}</b></div>`).join("") : '<p class="empty">No complaints reported yet.</p>';
+  $("#miniHot").innerHTML = hs.slice(0, 3).map(([l, v]) => `<div class="h" style="display:grid;grid-template-columns:90px 1fr 24px;gap:10px;align-items:center"><span>${esc(l)}</span><div class="bar2"><i style="width:${v / max * 100}%"></i></div><b>${v}</b></div>`).join("");
+  const q = $("#q").value.trim().toLowerCase();
+  const rows = list.filter(c => (filter === "All" || c.status === filter) && (!q || [c.title, c.description, c.location, c.category].join(" ").toLowerCase().includes(q)));
+  $("#rows").innerHTML = rows.length ? rows.map(c => `<tr>
+    <td>#${c.id}</td>
+    <td><b>${esc(c.title)}</b><small>${esc(c.description)}</small></td>
+    <td>${esc(c.location)}<small>${esc(c.category)}</small></td>
+    <td><span class="chip p-${esc(c.priority)}">${esc(c.priority)}</span></td>
+    <td>${esc(c.recommendation || "No recommendation")}</td>
+    <td><select data-id="${c.id}" aria-label="Status for complaint ${c.id}">${["Pending", "In Progress", "Resolved"].map(s => `<option${s === c.status ? " selected" : ""}>${s}</option>`).join("")}</select></td></tr>`).join("")
+    : '<tr><td colspan="6" class="empty">No complaints match. Clear the search or pick another status.</td></tr>';
+}
+
+// ---------- admin actions ----------
+$("#seg").addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") return;
+  filter = e.target.textContent;
+  [...$("#seg").children].forEach(b => b.setAttribute("aria-pressed", b === e.target));
+  render();
+});
+$("#q").addEventListener("input", render);
+$("#rows").addEventListener("change", async e => {
+  const id = +e.target.dataset.id, status = e.target.value, c = list.find(x => x.id === id);
+  if (!c) return;
+  try {
+    if (live) await req("/api/complaints/" + id, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    c.status = status; if (!live) demoSave();
+    toast("Status updated to " + status);
+  } catch (err) { toast("Could not update status. " + err.message, true); }
+  render();
+});
+
+// ---------- submit complaint ----------
+$("#image").addEventListener("change", e => {
+  const f = e.target.files[0], p = $("#preview");
+  if (!f) { p.style.display = "none"; return; }
+  p.src = URL.createObjectURL(f); p.style.display = "block";
+});
+$("#complaintForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const form = e.target, btn = form.querySelector("button");
+  const c = { title: $("#title").value.trim(), description: $("#description").value.trim(), category: $("#category").value, location: $("#location").value.trim() };
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  try {
+    let id, ai;
+    if (live) {
+      const r = await req("/api/complaints", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(c) });
+      id = r.complaint_id; ai = r.ai_analysis; list = await req("/api/complaints");
+    } else {
+      ai = analyze(c.description, list);
+      id = Math.max(0, ...list.map(x => x.id)) + 1;
+      list.unshift({ id, ...c, status: "Pending", priority: ai.priority, recommendation: recommend(c.category, ai.priority, c.description) });
+      demoSave();
+    }
+    const dup = ai.duplicate ? `Possible duplicate of #${ai.duplicate.complaint_id} (${ai.duplicate.similarity}% similar)` : "No likely duplicate found.";
+    $("#side").innerHTML = `<div class="res"><div><small>Complaint submitted</small><span class="id">#${id}</span></div>
+      <div><small>Priority</small><span class="chip p-${esc(ai.priority)}">${esc(ai.priority)}</span></div>
+      <div><small>Why</small>${esc(ai.reason)}</div>
+      <div><small>AI summary</small>${esc(ai.summary)}</div>
+      <div><small>Suggested action</small>${esc(recommend(c.category, ai.priority, c.description))}</div>
+      <div><small>Duplicate check</small>${esc(dup)}</div></div>`;
+    form.reset(); $("#preview").style.display = "none"; render();
+    toast("Complaint #" + id + " submitted");
+  } catch (err) {
+    toast("Submission failed. " + (err.name === "AbortError" || err.message === "Failed to fetch" ? "The server did not respond." : err.message), true);
+  } finally { btn.disabled = false; btn.textContent = "Submit complaint"; }
+});
+
+// ---------- hero live demo ----------
+const SAMPLES = [
+  "Exposed electric wire hanging low near the school gate in Udupi. Children walk here every morning.",
+  "Garbage has not been collected on our street for four days.",
+  "The bench near the lake looks faded and could use a fresh coat of paint."
+];
+const demo = $("#demo");
+let si = 0, ci = 0, timer, typing = true;
+function paint() {
+  const d = demo.value.trim();
+  if (!d) { $("#d-pri").innerHTML = $("#d-cat").textContent = $("#d-act").textContent = $("#d-dup").textContent = "Waiting for your text…"; return; }
+  const a = analyze(d, list), cat = guessCategory(d);
+  $("#d-pri").innerHTML = `<span class="chip p-${a.priority}">${a.priority}</span>`;
+  $("#d-cat").innerHTML = `<span class="chip">${cat}</span>`;
+  $("#d-act").textContent = recommend(cat, a.priority, d);
+  $("#d-dup").textContent = a.duplicate ? `Looks like #${a.duplicate.complaint_id} (${a.duplicate.similarity}% similar)` : "No likely duplicate found.";
+}
+function type() {
+  if (!typing) return;
+  const s = SAMPLES[si];
+  if (ci <= s.length) { demo.value = s.slice(0, ci++); paint(); timer = setTimeout(type, 28); }
+  else timer = setTimeout(() => { ci = 0; si = (si + 1) % SAMPLES.length; type(); }, 3400);
+}
+["focus", "input"].forEach(ev => demo.addEventListener(ev, () => { typing = false; clearTimeout(timer); if (ev === "input") paint(); }));
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) { typing = false; demo.value = SAMPLES[0]; paint(); } else type();
+
+// ---------- start ----------
+(async function init() {
+  list = demoLoad(); render();
+  try { const d = await req("/api/complaints"); if (!Array.isArray(d)) throw 0; list = d; live = true; } catch {}
+  render(); paint();
+})();
+</script>
+</body>
+</html>
